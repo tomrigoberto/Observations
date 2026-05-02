@@ -17,25 +17,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
-export type Client = {
-  id: string;
-  name: string;
-  created_at: string;
-};
-
-export type Member = {
-  id: string;
-  role: string;
-  display_name: string;
-  birth_year: number | null;
-};
-
-export type Entity = {
-  id: string;
-  entity_type: string;
-  name: string;
-};
-
+export type Client = { id: string; name: string; created_at: string };
+export type Member = { id: string; role: string; display_name: string; birth_year: number | null };
+export type Entity = { id: string; entity_type: string; name: string };
 export type Transcript = {
   id: string;
   member_id: string | null;
@@ -47,7 +31,6 @@ export type Transcript = {
   parse_error: string | null;
   uploaded_at: string;
 };
-
 export type AnalysisRun = {
   id: string;
   rule_pack_version: string;
@@ -56,7 +39,6 @@ export type AnalysisRun = {
   completed_at: string | null;
   coverage: { tax_years?: number[]; label?: string } | null;
 };
-
 export type ObservationResult = {
   id: string;
   observation_id: string;
@@ -77,7 +59,6 @@ export type ObservationResult = {
   dismissed: boolean;
   suppressed: boolean;
 };
-
 export type LibraryObservationSummary = {
   id: string;
   title: string;
@@ -89,7 +70,6 @@ export type LibraryObservationSummary = {
   version: string;
   audience_tags: string[];
 };
-
 export type LibraryObservationDetail = LibraryObservationSummary & {
   statement: string;
   discussion_points: string[];
@@ -103,6 +83,7 @@ export type LibraryObservationDetail = LibraryObservationSummary & {
 };
 
 export const api = {
+  apiBase: API_BASE,
   listClients: () => request<Client[]>("/clients"),
   createClient: (name: string) =>
     request<Client>("/clients", { method: "POST", body: JSON.stringify({ name }) }),
@@ -130,8 +111,7 @@ export const api = {
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },
-  listRuns: (clientId: string) =>
-    request<AnalysisRun[]>(`/clients/${clientId}/analysis`),
+  listRuns: (clientId: string) => request<AnalysisRun[]>(`/clients/${clientId}/analysis`),
   triggerAnalysis: (clientId: string) =>
     request<AnalysisRun>(`/clients/${clientId}/analysis`, { method: "POST" }),
   getRun: (clientId: string, runId: string) =>
@@ -143,6 +123,8 @@ export const api = {
       `/clients/${clientId}/analysis/${runId}/results/${resultId}/pin`,
       { method: "POST" },
     ),
+  pdfUrl: (clientId: string, runId: string, type: "summary" | "detail") =>
+    `${API_BASE}/clients/${clientId}/analysis/${runId}/pdf?type=${type}`,
   listLibrary: (params?: { category?: string; severity?: string; q?: string }) => {
     const q = new URLSearchParams();
     if (params?.category) q.set("category", params.category);

@@ -54,13 +54,35 @@ export default function RunPage() {
   if (!run) return <div>Loading…</div>;
 
   const categories = Array.from(new Set(results.map((r) => r.category)));
+  const pinnedCount = results.filter((r) => r.pinned_to_summary).length;
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">Analysis run</h1>
-        <div className="text-sm text-slate-600">
-          {run.coverage?.label} · rule pack {run.rule_pack_version} · {results.length} observations
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold">Analysis run</h1>
+          <div className="text-sm text-slate-600">
+            {run.coverage?.label} · rule pack {run.rule_pack_version} · {results.length} observations
+            {pinnedCount > 0 && <> · {pinnedCount} pinned to summary</>}
+          </div>
+        </div>
+        <div className="flex gap-2 text-sm">
+          <a
+            href={api.pdfUrl(id, runId, "summary")}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded border bg-white px-3 py-2 hover:bg-slate-50"
+          >
+            Exec summary PDF
+          </a>
+          <a
+            href={api.pdfUrl(id, runId, "detail")}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded border bg-white px-3 py-2 hover:bg-slate-50"
+          >
+            Detailed report PDF
+          </a>
         </div>
       </div>
 

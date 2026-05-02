@@ -1,11 +1,12 @@
 """Parser for IRS Account Transcript HTML.
 
-This is a v0 parser. It is intentionally minimal and tolerant: it tries
-several common HTML structures (table rows, definition lists, plain text)
-and normalizes filing status into our canonical enum.
+v0 parser: minimal but useful. Extracts:
+  - filing status
+  - tax year
+  - common labeled numeric fields (AGI, taxable income, account balance, ...)
+  - transaction-code events
 
-For production we will need golden tests against several real HTML
-transcript layouts, plus regression tests for IRS format changes.
+Production parsing requires golden tests against multiple real layouts.
 """
 
 import re
@@ -16,9 +17,21 @@ _TC_LINE_RE = re.compile(
     r"^(?P<code>\d{3})\s+(?P<desc>[A-Za-z][A-Za-z0-9 \-/&]+?)\s+(?P<date>\d{2}-\d{2}-\d{4})"
     r"(?:\s+(?P<amount>-?\$?[\d,]+\.\d{2}))?"
 )
-
 _FILING_STATUS_RE = re.compile(r"FILING STATUS\s*:?\s*(.+)", re.IGNORECASE)
 _TAX_PERIOD_RE = re.compile(r"TAX PERIOD\s*:?\s*(?:DEC )?(\d{4})", re.IGNORECASE)
+_NUMERIC_VALUE = r"\$?(-?[\d,]+(?:\.\d{2})?)"
+
+# Common numeric labels on Account Transcripts.
+_NUMERIC_FIELDS: list[tuple[str, str]] = [
+    ("agi", r"ADJUSTED GROSS INCOME"),
+    ("taxable_income", r"TAXABLE INCOME"),
+    ("tax_per_return", r"TAX PER RETURN"),
+    ("account_balance", r"ACCOUNT BALANCE"),
+    ("accrued_interest", r"ACCRUED INTEREST"),
+    ("accrued_penalty", r"ACCRUED PENALTY"),
+    ("total_credits", r"TOTAL CREDITS"),
+    ("se_taxable_income", r"SE TAXABLE INCOME TAXPAYER"),
+]
 
 
 def parse(html: str) -> dict:
@@ -32,9 +45,15 @@ def parse(html: str) -> dict:
     if m := _TAX_PERIOD_RE.search(text):
         tax_year = int(m.group(1))
 
+    amounts: dict[str, float] = {}
+    for field_name, label in _NUMERIC_FIELDS:
+        v = _extract_numeric(text, label)
+        if v is not None:
+            amounts[field_name] = v
+
     tc_events = []
-    for line in text.splitlines():
-        line = line.strip()
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
         if m := _TC_LINE_RE.match(line):
             amount_str = m.group("amount") or ""
             amount = (
@@ -51,7 +70,7 @@ def parse(html: str) -> dict:
             )
 
     return {
-        "header": {"filing_status": filing_status, "tax_year": tax_year},
+        "header": {"filing_status": filing_status, "tax_year": tax_year, **amounts},
         "tc_events": tc_events,
     }
 
@@ -59,3 +78,13 @@ def parse(html: str) -> dict:
 def _normalize_date(s: str) -> str:
     mm, dd, yyyy = s.split("-")
     return f"{yyyy}-{mm}-{dd}"
+
+
+def _extract_numeric(text: str, label: str) -> float | None:
+    m = re.search(rf"{label}\s*:?\s*{_NUMERIC_VALUE}", text, re.IGNORECASE)
+    if not m:
+        return None
+    try:
+        return float(m.group(1).replace(",", ""))
+    except (TypeError, ValueError):
+        return None

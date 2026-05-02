@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Executive Summary — {{ client.name }}</title>
+  <style>
+    @page { size: Letter; margin: 0.75in; }
+    body { font-family: -apple-system, system-ui, sans-serif; font-size: 11pt; color: #111; }
+    h1 { font-size: 18pt; margin: 0 0 6pt 0; }
+    h2 { font-size: 12pt; margin: 14pt 0 4pt 0; border-bottom: 1px solid #ccc; padding-bottom: 2pt; }
+    .meta { color: #555; font-size: 9pt; }
+    .obs { margin: 6pt 0; padding: 6pt; border-left: 3px solid #ccc; background: #fafafa; }
+    .obs.urgent { border-color: #b00020; }
+    .obs.risk { border-color: #d97706; }
+    .obs.opportunity { border-color: #0a6; }
+    .obs.informational { border-color: #888; }
+    .badge { display: inline-block; font-size: 8pt; padding: 1pt 4pt; border-radius: 3pt;
+             background: #eee; color: #333; margin-right: 4pt; }
+    footer { margin-top: 18pt; font-size: 8pt; color: #777; }
+  </style>
+</head>
+<body>
+  <h1>{{ client.name }} — Executive Summary</h1>
+  <div class="meta">
+    {{ coverage.label }} · Generated {{ generated_at }} · Rule pack {{ rule_pack_version }}
+  </div>
+
+  {% for severity_label, observations in by_severity %}
+    {% if observations %}
+      <h2>{{ severity_label }}</h2>
+      {% for o in observations %}
+        <div class="obs {{ o.severity }}">
+          <span class="badge">{{ o.severity }}</span>
+          <span class="badge">{{ o.confidence }}</span>
+          <strong>{{ o.title }}</strong>
+          <div>{{ o.statement_rendered }}</div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endfor %}
+
+  <footer>
+    {% for d in disclaimers %}<div>{{ d.text }}</div>{% endfor %}
+  </footer>
+</body>
+</html>

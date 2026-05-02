@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Detailed Report — {{ client.name }}</title>
+  <style>
+    @page { size: Letter; margin: 0.75in; }
+    body { font-family: -apple-system, system-ui, sans-serif; font-size: 10.5pt; color: #111; }
+    h1 { font-size: 18pt; margin: 0 0 6pt 0; }
+    h2 { font-size: 13pt; margin: 18pt 0 6pt 0; border-bottom: 1px solid #999; }
+    h3 { font-size: 11pt; margin: 10pt 0 2pt 0; }
+    .meta { color: #555; font-size: 9pt; }
+    .obs { margin: 8pt 0; padding: 8pt; border: 1px solid #ddd; border-radius: 3pt; }
+    .badge { display: inline-block; font-size: 8pt; padding: 1pt 4pt; border-radius: 3pt;
+             background: #eee; margin-right: 4pt; }
+    ul { margin: 4pt 0 4pt 18pt; }
+    .sources { font-size: 9pt; color: #444; }
+    .caveat { font-size: 9pt; color: #6b3a00; background: #fff7e8; padding: 4pt; border-radius: 3pt; }
+    footer { margin-top: 18pt; font-size: 8pt; color: #777; }
+  </style>
+</head>
+<body>
+  <h1>{{ client.name }} — Detailed Observation Report</h1>
+  <div class="meta">
+    {{ coverage.label }} · Generated {{ generated_at }} · Rule pack {{ rule_pack_version }}
+  </div>
+
+  <h2>Input transcripts</h2>
+  <ul>
+    {% for t in transcripts %}
+      <li>{{ t.transcript_type }} · tax year {{ t.tax_year }} · {{ t.member_or_entity_name }} · {{ t.parse_status }}</li>
+    {% endfor %}
+  </ul>
+
+  {% for category, observations in by_category %}
+    <h2>{{ category }}</h2>
+    {% for o in observations %}
+      <div class="obs">
+        <span class="badge">{{ o.severity }}</span>
+        <span class="badge">{{ o.confidence }}</span>
+        <span class="badge">{{ o.observation_id }} v{{ o.observation_version }}</span>
+        <strong>{{ o.title }}</strong>
+        <div>{{ o.statement_rendered }}</div>
+        {% if o.discussion_points %}
+          <h3>Discussion points</h3>
+          <ul>{% for dp in o.discussion_points %}<li>{{ dp }}</li>{% endfor %}</ul>
+        {% endif %}
+        {% if o.sources_rendered %}
+          <h3>Sources</h3>
+          <ul class="sources">
+            {% for s in o.sources_rendered %}
+              <li>{{ s.description }} — {{ s.transcript_type }} · {{ s.field_path }} · tax year {{ s.tax_year }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% if o.caveats %}
+          <div class="caveat"><strong>Caveats:</strong> {{ o.caveats }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% endfor %}
+
+  <footer>
+    {% for d in disclaimers %}<div>{{ d.text }}</div>{% endfor %}
+  </footer>
+</body>
+</html>

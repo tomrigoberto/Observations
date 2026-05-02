@@ -1,6 +1,5 @@
-from collections import Counter
-
 from app.engine import facts
+from app.engine.patterns._filters import form_matches_where
 from app.engine.patterns.base import Pattern, PatternResult
 
 
@@ -14,14 +13,14 @@ class FormPresent(Pattern):
         where = params.get("where") or {}
 
         all_forms = facts.forms(member, household, form_type=form_type)
-        matches = []
+        matches: list[dict] = []
         for f in all_forms:
             year = f.get("tax_year")
             if in_year is not None and year != in_year:
                 continue
             if year_range and (year is None or year < year_range[0] or year > year_range[1]):
                 continue
-            if not _form_matches_where(f, where):
+            if not form_matches_where(f, where):
                 continue
             matches.append(f)
         if not matches:
@@ -39,20 +38,3 @@ class FormPresent(Pattern):
                 "sum_of_box_1": sum_box_1,
             },
         )
-
-
-def _form_matches_where(form: dict, where: dict) -> bool:
-    for k, v in where.items():
-        if k == "taxable_amount_gt":
-            if (form.get("taxable_amount") or 0) <= v:
-                return False
-        elif k == "box_1_gt":
-            if (form.get("box_1") or 0) <= v:
-                return False
-        elif k == "distribution_code_any_of":
-            if form.get("distribution_code") not in set(v):
-                return False
-        elif k == "payer_contains":
-            if v.lower() not in (form.get("payer") or "").lower():
-                return False
-    return True

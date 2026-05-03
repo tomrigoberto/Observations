@@ -1,7 +1,13 @@
-.PHONY: up down logs reset backend-shell db-shell test library-tests seed-demo fmt
+.PHONY: up build down logs reset backend-shell db-shell test library-tests seed-demo fmt
 
+# Build then start. Split because Docker Compose v5 changed `up --build` semantics;
+# `build` + `up -d` works on both v2 and v5.
 up:
-	docker compose up --build -d
+	docker compose build
+	docker compose up -d
+
+build:
+	docker compose build
 
 down:
 	docker compose down
